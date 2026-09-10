@@ -1,0 +1,17 @@
+{
+  "name": "متابعة حفظ القرآن",
+  "short_name": "متابعة الحفظ",
+  "description": "متابعة حفظ القرآن الكريم للطلاب بدون إنترنت",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F8F9FA",
+  "theme_color": "#FF9D50",
+  "icons": [
+    {"src":"./assets/icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./assets/icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
