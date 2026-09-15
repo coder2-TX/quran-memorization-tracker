@@ -16,6 +16,14 @@ export function validateReviewDailyPages(value, totalPages = 604) {
   return pages;
 }
 
+export function validateReviewWeeklyDays(value) {
+  const days = Number(value);
+  if (!Number.isInteger(days) || days < 1 || days > 7) {
+    throw new Error('أيام المراجعة في الأسبوع يجب أن تكون رقمًا صحيحًا من 1 إلى 7.');
+  }
+  return days;
+}
+
 export function createReviewPlan(mode, options = {}, totalPages = 604, todayISO = '') {
   if (!Object.values(REVIEW_MODES).includes(mode)) {
     throw new Error('اختر نمط مراجعة صحيحًا.');
@@ -30,6 +38,7 @@ export function createReviewPlan(mode, options = {}, totalPages = 604, todayISO 
   if (mode === REVIEW_MODES.free) return plan;
 
   plan.dailyPages = validateReviewDailyPages(options.dailyPages, totalPages);
+  plan.weeklyDays = validateReviewWeeklyDays(options.weeklyDays ?? 7);
 
   if (mode === REVIEW_MODES.sequential) {
     plan.direction = options.direction === 'end_to_start' ? 'end_to_start' : 'start_to_end';

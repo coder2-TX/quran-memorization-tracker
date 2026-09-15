@@ -1,4 +1,4 @@
-const VERSION = "qmt-v6.4.0";
+const VERSION = "qmt-v6.5.0";
 const CACHE = `${VERSION}-app`;
 const APP_SHELL = [
   "./",

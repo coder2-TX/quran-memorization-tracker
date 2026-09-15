@@ -12,6 +12,7 @@ import {
   reviewHistoryRows,
   reviewModeLabel,
   validateReviewDailyPages,
+  validateReviewWeeklyDays,
   memorizedPagesForSurah,
   memorizedPhysicalPages,
   memorizedSurahs,
@@ -21,6 +22,9 @@ const map = JSON.parse(fs.readFileSync(new URL('../data/quran-map.json', import.
 
 assert.equal(validateReviewDailyPages(10), 10);
 assert.throws(() => validateReviewDailyPages(0), /رقمًا صحيحًا/);
+assert.equal(validateReviewWeeklyDays(5), 5);
+assert.throws(() => validateReviewWeeklyDays(0), /1 إلى 7/);
+assert.throws(() => validateReviewWeeklyDays(8), /1 إلى 7/);
 assert.throws(() => createReviewPlan('unknown', {}, 604, '2026-09-10'), /نمط مراجعة/);
 assert.equal(reviewModeLabel(REVIEW_MODES.free), 'مراجعة حرة');
 
@@ -33,11 +37,15 @@ const progress = initialProgress(map, student, 'completed_surah', 17, null, '202
 assert.ok(progress.length > 0);
 
 // المسارات الثلاثة تحفظ الإعداد فقط ولا تنشئ مقترحات مراجعة.
-const sequentialPlan = createReviewPlan(REVIEW_MODES.sequential, { dailyPages: 7, direction: 'start_to_end' }, 604, '2026-09-10');
+const sequentialPlan = createReviewPlan(REVIEW_MODES.sequential, { dailyPages: 7, weeklyDays: 5, direction: 'start_to_end' }, 604, '2026-09-10');
 assert.equal(sequentialPlan.dailyPages, 7);
+assert.equal(sequentialPlan.weeklyDays, 5);
 assert.equal(sequentialPlan.direction, 'start_to_end');
-const balancedPlan = createReviewPlan(REVIEW_MODES.balanced, { dailyPages: 10 }, 604, '2026-09-10');
+const balancedPlan = createReviewPlan(REVIEW_MODES.balanced, { dailyPages: 10, weeklyDays: 4 }, 604, '2026-09-10');
 assert.equal(balancedPlan.dailyPages, 10);
+assert.equal(balancedPlan.weeklyDays, 4);
+const legacyPlan = createReviewPlan(REVIEW_MODES.balanced, { dailyPages: 6 }, 604, '2026-09-10');
+assert.equal(legacyPlan.weeklyDays, 7);
 const freePlan = createReviewPlan(REVIEW_MODES.free, {}, 604, '2026-09-10');
 assert.equal(freePlan.dailyPages, undefined);
 

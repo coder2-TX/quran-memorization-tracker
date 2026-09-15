@@ -332,7 +332,9 @@ async function renderReview(id) {
 
 function reviewSummaryPanel(student, insights) {
   const plan = student.reviewPlan;
-  const target = plan?.mode !== REVIEW_MODES.free && plan?.dailyPages ? `${plan.dailyPages} صفحة` : 'بدون هدف';
+  const target = plan?.mode !== REVIEW_MODES.free && plan?.dailyPages
+    ? `${plan.dailyPages} صفحة × ${plan.weeklyDays || 7} أيام/أسبوع`
+    : 'بدون هدف';
   const todayValue = plan?.mode !== REVIEW_MODES.free && insights.remainingToday !== null
     ? `${insights.reviewedToday} / ${plan.dailyPages}`
     : insights.reviewedToday;
@@ -358,7 +360,7 @@ function manualReviewWorkspace(student, progress, insights) {
   const availableSurahs = memorizedSurahs(quranMap, progress);
   const planDescription = reviewPlanDescription(plan);
   const targetHtml = plan.mode !== REVIEW_MODES.free
-    ? `<div class="review-target-progress"><div><span>هدف اليوم</span><strong>${insights.reviewedToday} / ${plan.dailyPages} صفحة</strong></div><div class="progress-track"><span style="width:${Math.min(100, Math.round(insights.reviewedToday / plan.dailyPages * 100))}%"></span></div><small>${insights.remainingToday > 0 ? `متبقي ${insights.remainingToday} صفحة للوصول للهدف اليومي.` : 'تم بلوغ هدف المراجعة لليوم.'}</small></div>`
+    ? `<div class="review-target-progress"><div><span>هدف يوم المراجعة</span><strong>${insights.reviewedToday} / ${plan.dailyPages} صفحة</strong></div><div class="progress-track"><span style="width:${Math.min(100, Math.round(insights.reviewedToday / plan.dailyPages * 100))}%"></span></div><small>${insights.remainingToday > 0 ? `متبقي ${insights.remainingToday} صفحة للوصول لهدف يوم المراجعة. الخطة ${plan.weeklyDays || 7} أيام أسبوعيًا.` : `تم بلوغ هدف يوم المراجعة. الخطة ${plan.weeklyDays || 7} أيام أسبوعيًا.`}</small></div>`
     : '';
 
   return `<section class="panel review-workspace">
@@ -415,10 +417,10 @@ function manualReviewForm(plan, availableSurahs) {
 function reviewPlanDescription(plan) {
   if (plan.mode === REVIEW_MODES.sequential) {
     const direction = plan.direction === 'end_to_start' ? 'من آخر المحفوظ إلى أوله' : 'من أول المحفوظ إلى آخره';
-    return `${direction} · هدف ${plan.dailyPages} صفحة في يوم المراجعة. أنت تحدد المقطع الذي راجعته يوميًا.`;
+    return `${direction} · ${plan.dailyPages} صفحة في يوم المراجعة × ${plan.weeklyDays || 7} أيام أسبوعيًا. أنت تحدد المقطع الذي راجعته بنفسك.`;
   }
   if (plan.mode === REVIEW_MODES.balanced) {
-    return `هدف ${plan.dailyPages} صفحة يوميًا. عند التسجيل حدد هل المقطع تثبيت حديث أم مراجعة قديمة.`;
+    return `${plan.dailyPages} صفحة في يوم المراجعة × ${plan.weeklyDays || 7} أيام أسبوعيًا. عند التسجيل حدد هل المقطع تثبيت حديث أم مراجعة قديمة.`;
   }
   return 'لا يوجد هدف إلزامي. سجل ما راجعه الطالب فعليًا وقتما يريد.';
 }
@@ -637,6 +639,7 @@ async function editReviewPlan(student) {
   const current = student.reviewPlan || {};
   const selectedMode = current.mode || REVIEW_MODES.balanced;
   const dailyPages = current.dailyPages || 10;
+  const weeklyDays = current.weeklyDays || 7;
   const direction = current.direction || 'start_to_end';
 
   root.insertAdjacentHTML('beforeend', `<div class="modal-backdrop" id="review-plan-modal">
@@ -650,7 +653,10 @@ async function editReviewPlan(student) {
         <label class="review-mode-card"><input type="radio" name="reviewMode" value="${REVIEW_MODES.balanced}" ${selectedMode === REVIEW_MODES.balanced ? 'checked' : ''}><span><i class="fa-solid fa-code-branch"></i></span><strong>حديث + قديم</strong><small>الطالب يحدد وقت التسجيل هل المراجعة حديثة أم قديمة.</small></label>
         <label class="review-mode-card"><input type="radio" name="reviewMode" value="${REVIEW_MODES.free}" ${selectedMode === REVIEW_MODES.free ? 'checked' : ''}><span><i class="fa-solid fa-hand-pointer"></i></span><strong>حرة</strong><small>تسجيل ما تمت مراجعته بدون هدف يومي.</small></label>
       </div>
-      <div id="review-daily-field" class="field"><label for="review-daily-pages">هدف المراجعة اليومي</label><div class="number-input-wrap"><input id="review-daily-pages" type="number" inputmode="numeric" min="1" max="604" step="1" value="${dailyPages}" required><span>صفحة</span></div></div>
+      <div id="review-target-fields" class="review-plan-target-grid">
+        <div class="field"><label for="review-daily-pages">الصفحات في يوم المراجعة</label><div class="number-input-wrap"><input id="review-daily-pages" type="number" inputmode="numeric" min="1" max="604" step="1" value="${dailyPages}" required><span>صفحة</span></div></div>
+        <div class="field"><label for="review-weekly-days">أيام المراجعة في الأسبوع</label><div class="number-input-wrap"><input id="review-weekly-days" type="number" inputmode="numeric" min="1" max="7" step="1" value="${weeklyDays}" required><span>يوم</span></div></div>
+      </div>
       <div id="review-direction-field" class="field"><label>اتجاه المسار التسلسلي</label><div class="review-direction-options"><label><input type="radio" name="reviewDirection" value="start_to_end" ${direction === 'start_to_end' ? 'checked' : ''}><span>من أول المحفوظ</span></label><label><input type="radio" name="reviewDirection" value="end_to_start" ${direction === 'end_to_start' ? 'checked' : ''}><span>من آخر المحفوظ</span></label></div></div>
       <div class="plan-reset-note"><i class="fa-solid fa-circle-info"></i><span>كل المراجعات السابقة ستبقى محفوظة مهما غيّرت المسار.</span></div>
       <div class="modal-actions"><button type="button" class="button button-ghost modal-cancel">إلغاء</button><button type="submit" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> حفظ الإعداد</button></div>
@@ -659,16 +665,18 @@ async function editReviewPlan(student) {
 
   const modal = root.querySelector('#review-plan-modal');
   const form = modal?.querySelector('#review-plan-form');
-  const dailyField = modal?.querySelector('#review-daily-field');
+  const targetFields = modal?.querySelector('#review-target-fields');
   const directionField = modal?.querySelector('#review-direction-field');
   const dailyInput = modal?.querySelector('#review-daily-pages');
+  const weeklyInput = modal?.querySelector('#review-weekly-days');
   const close = () => modal?.remove();
 
   const refreshModeFields = () => {
     const mode = form?.querySelector('input[name="reviewMode"]:checked')?.value || REVIEW_MODES.free;
-    dailyField.hidden = mode === REVIEW_MODES.free;
+    targetFields.hidden = mode === REVIEW_MODES.free;
     directionField.hidden = mode !== REVIEW_MODES.sequential;
     if (dailyInput) dailyInput.required = mode !== REVIEW_MODES.free;
+    if (weeklyInput) weeklyInput.required = mode !== REVIEW_MODES.free;
   };
 
   modal?.querySelector('.modal-close')?.addEventListener('click', close);
@@ -684,6 +692,7 @@ async function editReviewPlan(student) {
       const mode = form.querySelector('input[name="reviewMode"]:checked')?.value || REVIEW_MODES.free;
       const options = {
         dailyPages: Number(form.querySelector('#review-daily-pages')?.value || 0),
+        weeklyDays: Number(form.querySelector('#review-weekly-days')?.value || 0),
         direction: form.querySelector('input[name="reviewDirection"]:checked')?.value || 'start_to_end',
       };
       const reviewPlan = createReviewPlan(mode, options, APP_CONFIG.quran.totalPages, todayISO());
