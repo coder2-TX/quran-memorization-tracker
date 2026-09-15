@@ -1,4 +1,4 @@
-const VERSION = "qmt-v4.0.0";
+const VERSION = "qmt-v6.4.0";
 const CACHE = `${VERSION}-app`;
 const APP_SHELL = [
   "./",
@@ -11,6 +11,8 @@ const APP_SHELL = [
   "./assets/js/domain/quran.js",
   "./assets/js/domain/memorization.js",
   "./assets/js/domain/plan.js",
+  "./assets/js/domain/review.js",
+  "./assets/js/domain/activity.js",
   "./assets/js/ui/helpers.js",
   "./assets/images/logo.svg",
   "./assets/icons/icon-192.png",
@@ -20,7 +22,6 @@ const APP_SHELL = [
 ];
 const OPTIONAL_ASSETS = [
   "./assets/fonts/SomarSans-Regular.otf",
-  "./assets/fonts/SomarSans-Medium.otf",
   "./assets/fonts/SomarSans-Medium.otf",
 ];
 
@@ -59,8 +60,19 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== location.origin) return;
 
   if (event.request.mode === "navigate") {
+    const scopeUrl = new URL(self.registration.scope);
+    const requestUrl = new URL(event.request.url);
+    const rootPaths = new Set([scopeUrl.pathname, `${scopeUrl.pathname}index.html`]);
+
+    if (!rootPaths.has(requestUrl.pathname)) {
+      event.respondWith(Promise.resolve(Response.redirect(scopeUrl.href, 302)));
+      return;
+    }
+
     event.respondWith(
-      fetch(event.request).catch(() => caches.match("./index.html")),
+      fetch(event.request)
+        .then((response) => response.ok ? response : caches.match("./index.html"))
+        .catch(() => caches.match("./index.html")),
     );
     return;
   }

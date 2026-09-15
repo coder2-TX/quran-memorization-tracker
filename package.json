@@ -2,6 +2,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/domain.test.mjs"
+    "test": "node tests/domain.test.mjs && node tests/review.test.mjs && node tests/activity.test.mjs"
   }
 }

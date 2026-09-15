@@ -2,7 +2,7 @@ export const APP_CONFIG = Object.freeze({
   name: 'متابعة حفظ القرآن',
   shortName: 'متابعة الحفظ',
   description: 'متابعة حفظ القرآن الكريم للطلاب بدون إنترنت',
-  version: '4.0.0',
+  version: '6.4.0',
   logo: './assets/images/logo.svg',
   theme: {
     primary: '#FF9D50',

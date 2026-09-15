@@ -44,47 +44,83 @@ assert.equal(report2.physicalPagesCompleted, 105, "shared page 106 should not co
 assert.equal(unitKey(16,267),'16:267');
 console.log('9 domain checks passed');
 
-// اختبارات خطة الحفظ اليومية.
-const { createMemorizationPlan, planSnapshot, planStatusLabel, validateDailyPages } = await import('../assets/js/domain/plan.js');
+// اختبارات خطة الحفظ مع عدد أيام الأسبوع.
+const { createMemorizationPlan, pauseMemorizationPlan, resumeMemorizationPlan, planSnapshot, planStatusLabel, validateDailyPages, validateWeeklyDays } = await import('../assets/js/domain/plan.js');
 assert.equal(validateDailyPages(2), 2);
+assert.equal(validateWeeklyDays(5), 5);
 assert.throws(() => validateDailyPages(0), /رقمًا صحيحًا/);
 assert.throws(() => validateDailyPages(2.5), /رقمًا صحيحًا/);
+assert.throws(() => validateWeeklyDays(0), /1 إلى 7/);
+assert.throws(() => validateWeeklyDays(8), /1 إلى 7/);
 
-const plan = createMemorizationPlan(3, 100, '2026-09-10', 604);
+// 7 أيام أسبوعيًا يحافظ على سلوك النسخة السابقة.
+const plan = createMemorizationPlan(3, 100, '2026-09-10', 604, 7);
 let planData = planSnapshot(plan, 100, 604, '2026-09-10');
 assert.equal(planData.status, 'on_track');
 assert.equal(planData.pagesToReachToday, 3);
-assert.equal(planData.totalPlanDays, 168);
+assert.equal(planData.weeklyDays, 7);
+assert.equal(planData.totalPlanSessions, 168);
 assert.equal(planData.plannedFinishDate, '2027-02-24');
 assert.equal(planData.projectedFinishDate, '2027-02-24');
 
-// في اليوم التالي: كان يجب إكمال 3 صفحات قبل بدء اليوم.
 planData = planSnapshot(plan, 102, 604, '2026-09-11');
 assert.equal(planData.status, 'behind');
 assert.equal(planData.statusPages, 1);
 assert.equal(planStatusLabel(planData).label, 'متأخر عن الخطة');
 
-// بين مستهدف بداية اليوم ونهايته = على الخطة.
 planData = planSnapshot(plan, 104, 604, '2026-09-11');
 assert.equal(planData.status, 'on_track');
 assert.equal(planData.pagesToReachToday, 2);
 
-// أكثر من مستهدف نهاية اليوم = متقدم.
 planData = planSnapshot(plan, 107, 604, '2026-09-11');
 assert.equal(planData.status, 'ahead');
 assert.equal(planData.statusPages, 1);
 assert.equal(planStatusLabel(planData).label, 'متقدم على الخطة');
 
-// تعديل الخطة يبدأ من الرصيد الحالي ويعيد الحساب بشكل مستقل عن الخطة القديمة.
-const revisedPlan = createMemorizationPlan(2, 150, '2026-09-20', 604);
+// 5 أيام أسبوعيًا يطيل الموعد المتوقع بدون تغيير عدد صفحات جلسة الحفظ.
+const fiveDaysPlan = createMemorizationPlan(3, 100, '2026-09-10', 604, 5);
+planData = planSnapshot(fiveDaysPlan, 100, 604, '2026-09-10');
+assert.equal(planData.pagesToReachToday, 3);
+assert.equal(planData.plannedFinishDate, '2027-05-01');
+assert.equal(planData.totalCalendarDays, 234);
+
+// في يوم راحة تقديري لا يضيف النظام هدفًا جديدًا.
+planData = planSnapshot(fiveDaysPlan, 109, 604, '2026-09-13');
+assert.equal(planData.sessionsBeforeToday, 3);
+assert.equal(planData.sessionsByEndToday, 3);
+assert.equal(planData.pagesToReachToday, 0);
+assert.equal(planData.status, 'on_track');
+
+// تعديل الخطة يبدأ من الرصيد الحالي.
+const revisedPlan = createMemorizationPlan(2, 150, '2026-09-20', 604, 4);
 planData = planSnapshot(revisedPlan, 150, 604, '2026-09-20');
 assert.equal(planData.status, 'on_track');
 assert.equal(planData.pagesToReachToday, 2);
 assert.equal(planData.basePhysicalPagesCompleted, 150);
+assert.equal(planData.weeklyDays, 4);
 
-console.log('plan checks passed');
+// الخطط القديمة التي لا تحتوي weeklyDays تظل 7 أيام للتوافق الخلفي.
+planData = planSnapshot({ dailyPages: 2, startedOn: '2026-09-20', basePhysicalPagesCompleted: 150 }, 150, 604, '2026-09-20');
+assert.equal(planData.weeklyDays, 7);
 
 // لو تم التراجع بعد بدء الخطة، لا يصبح خط الأساس أكبر من الحفظ الحالي.
-planData = planSnapshot(createMemorizationPlan(2, 150, '2026-09-20', 604), 149, 604, '2026-09-20');
+planData = planSnapshot(createMemorizationPlan(2, 150, '2026-09-20', 604, 7), 149, 604, '2026-09-20');
 assert.equal(planData.basePhysicalPagesCompleted, 149);
 assert.equal(planData.status, 'on_track');
+
+
+// إيقاف الخطة مؤقتًا يجمّد التأخر، والاستئناف يستبعد أيام التوقف من الحساب.
+const pauseBase = createMemorizationPlan(2, 100, '2026-09-10', 604, 7);
+const pausedPlan = pauseMemorizationPlan(pauseBase, '2026-09-12');
+planData = planSnapshot(pausedPlan, 104, 604, '2026-09-15');
+assert.equal(planData.status, 'paused');
+assert.equal(planData.pagesToReachToday, 0);
+assert.equal(planStatusLabel(planData).label, 'الخطة متوقفة');
+const resumedPlan = resumeMemorizationPlan(pausedPlan, '2026-09-15');
+assert.equal(resumedPlan.pausedDays, 3);
+assert.equal(resumedPlan.pausedOn, null);
+planData = planSnapshot(resumedPlan, 104, 604, '2026-09-15');
+assert.notEqual(planData.status, 'paused');
+assert.equal(planData.pausedDays, 3);
+
+console.log('plan checks passed');

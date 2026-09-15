@@ -8,6 +8,18 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="متابعة الحفظ">
+  <script>
+    (() => {
+      const isGithubPages = location.hostname.endsWith('.github.io');
+      const parts = location.pathname.split('/').filter(Boolean);
+      const basePath = isGithubPages && parts.length ? `/${parts[0]}/` : '/';
+      const validPaths = new Set([basePath, `${basePath}index.html`]);
+      if (!validPaths.has(location.pathname)) {
+        const hash = location.hash || '#/';
+        location.replace(`${location.origin}${basePath}${hash}`);
+      }
+    })();
+  </script>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
@@ -25,7 +37,7 @@
 
   <main class="container main-content" id="app" aria-live="polite"></main>
 
-  <footer class="site-footer"><div class="container"><span data-app-name>متابعة حفظ القرآن</span><span data-app-version>v4.0.0</span></div></footer>
+  <footer class="site-footer"><div class="container"><span>تصميم وتطوير خديجة مالك</span><span data-app-version>v6.4.0</span></div></footer>
   <input id="restore-input" type="file" accept="application/json,.json" hidden>
   <div id="toast-host" class="toast-host" aria-live="assertive"></div>
   <script type="module" src="./assets/js/app.js"></script>
